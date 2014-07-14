@@ -2,6 +2,8 @@
 
 ## Overview
 
+A utility for handing syncing of remote and local data resources.
+
 ## Installation
 
 Should be as simple as
@@ -22,4 +24,4 @@ This software is currently unpublished
 
 ## Copyright
 
-Copyright (c) 2013 Michael Imelfort. See LICENSE.txt for further details.
+Copyright (c) 2014 Michael Imelfort. See LICENSE.txt for further details.

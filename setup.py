@@ -6,7 +6,7 @@ setup(
     author='Michael Imelfort',
     author_email='mike@mikeimelfort.com',
     packages=['screamingbackpack'],
-    scripts=['bin/ScreamingBackpack'],
+    scripts=['bin/screamingBackpack'],
     url='http://pypi.python.org/pypi/ScreamingBackpack/',
     license='GPLv3',
     description='ScreamingBackpack',

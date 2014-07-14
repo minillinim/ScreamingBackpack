@@ -38,8 +38,14 @@ __status__ = "Dev"
 ###############################################################################
 ###############################################################################
 
+# system imports
+
 import argparse
 import sys
+
+# local imports
+
+from screamingbackpack.manifestManager import ManifestManager
 
 ###############################################################################
 ###############################################################################
@@ -48,10 +54,10 @@ import sys
 
 def doWork(args):
     """Wrapper function to allow easy profiling"""
-    # hook into core project code here. For example:
-    from screamingbackpack.ScreamingBackpack import TemplateClass
-    TC = TemplateClass()
-    TC.sayHi()
+    MM = ManifestManager()
+    MM.createManifest(args.path)
+
+
 
 ###############################################################################
 ###############################################################################
@@ -60,7 +66,7 @@ def doWork(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    #parser.add_argument('positional_arg', help="Required")
+    parser.add_argument('path', help="path where files are")
     #parser.add_argument('positional_arg2', type=int, help="Integer argument")
     #parser.add_argument('positional_arg3', nargs='+', help="Multiple values")
     #parser.add_argument('-X', '--optional_X', action="store_true", default=False, help="flag")

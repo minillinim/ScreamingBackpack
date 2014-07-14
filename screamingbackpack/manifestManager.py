@@ -87,8 +87,8 @@ class ManifestManager(object):
 
     def diffRemoteManifest(self,
                            manifestPath,
-                           localManifestName=__MANIFEST__
                            remoteUrl,
+                           localManifestName=__MANIFEST__,
                            remoteManifestName=__MANIFEST__):
         """get the manifest file from the remote server and
         check for any differences from the local manifest

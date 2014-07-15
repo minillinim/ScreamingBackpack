@@ -28,10 +28,10 @@ __author__ = "Michael Imelfort"
 __copyright__ = "Copyright 2013"
 __credits__ = ["Michael Imelfort"]
 __license__ = "GPLv3"
-__version__ = "0.0.1"
+__version__ = "0.2.0"
 __maintainer__ = "Michael Imelfort"
 __email__ = "mike@mikeimelfort.com"
-__status__ = "Dev"
+__status__ = "Beta"
 
 ###############################################################################
 ###############################################################################
@@ -54,17 +54,19 @@ from screamingbackpack.manifestManager import ManifestManager
 
 def doWork(args):
     """Wrapper function to allow easy profiling"""
-    MM = ManifestManager()
     if (args.subparser_name == 'create'):
         # create a new manifest
+        MM = ManifestManager(manType=args.mantype)
         MM.createManifest(args.path, manifestName=args.name)
 
     elif (args.subparser_name == 'diff'):
         # work out the difference between two manifests
-        MM.diffManifests(args.localpath, args.sourcepath, localManifestName=args.localname, sourceManifestName=args.sourcename)
+        MM = ManifestManager()
+        MM.diffManifests(args.localpath, args.sourcepath, localManifestName=args.localname, sourceManifestName=args.sourcename, printDiffs=True)
 
     elif (args.subparser_name == 'update'):
         # update a local manifest
+        MM = ManifestManager()
         MM.updateManifest(args.localpath, args.sourcepath, localManifestName=args.localname, sourceManifestName=args.sourcename)
 
     else:
@@ -87,6 +89,7 @@ if __name__ == '__main__':
                                           help='Create a manifest',
                                           description='Create a manifest')
     create_parser.add_argument('path', help="path to files to be added to manifest")
+    create_parser.add_argument('-t', '--mantype', default=None, help="type of the manifest")
     create_parser.add_argument('-n', '--name', default=None, help="name for the manifest file")
 
 
@@ -96,7 +99,7 @@ if __name__ == '__main__':
                                          description='Work out the difference between two manifests')
     diff_parser.add_argument('localpath', help="path to the local collection of files")
     diff_parser.add_argument('-l', '--localname', default=None, help="name of the local manifest file")
-    diff_parser.add_argument('sourcepath', help="path to the collection of source files")
+    diff_parser.add_argument('sourcepath', help="path to the collection of source files (URL or file path)")
     diff_parser.add_argument('-s', '--sourcename', default=None, help="name of the source manifest file")
 
     update_parser = subparsers.add_parser('update',
@@ -105,7 +108,7 @@ if __name__ == '__main__':
                                           description='Update a local manifest')
     update_parser.add_argument('localpath', help="path to the local collection of files")
     update_parser.add_argument('-l', '--localname', default=None, help="name of the local manifest file")
-    update_parser.add_argument('sourcepath', help="path to the collection of source files")
+    update_parser.add_argument('sourcepath', help="path to the collection of source files (URL or file path)")
     update_parser.add_argument('-s', '--sourcename', default=None, help="name of the source manifest file")
 
     # parse the arguments

@@ -52,17 +52,17 @@ import os
 class FileEntity(object):
     """Basic file entity"""
     def __init__(self,
-                 type,      # the type of this entity ['d' or 'f']
                  name,      # the name of the entity on the file system ( Full path to root dir if id: ROOT)
                  path,      # the local path to this entity
                  parent,    # the entity (type == 'dir') that contains this. ( None for id: ROOT )
-                 hashd      # hash of the entity if type == 'file'
+                 hashd,     # hash of the entity if type == 'file'
+                 size       # size of the file in bytes
                  ):
-        self.type = type
         self.name = name
         self.path=path
         self.parent = parent
         self.hashd = hashd
+        self.size = size
 
     def getFullPath(self):
         """get the full path to this entity"""
@@ -81,7 +81,7 @@ class FileEntity(object):
 
     def __str__(self):
         if self.parent is not None:
-            return "\t".join([self.type,self.name,self.path,self.hashd])
+            return "\t".join([os.path.join(self.path,self.name),self.hashd,str(self.size)])
         return ""
 
 #------------------------------------------------------------------------------

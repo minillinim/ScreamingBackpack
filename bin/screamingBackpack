@@ -55,9 +55,23 @@ from screamingbackpack.manifestManager import ManifestManager
 def doWork(args):
     """Wrapper function to allow easy profiling"""
     MM = ManifestManager()
-    MM.createManifest(args.path)
+    if (args.subparser_name == 'create'):
+        # create a new manifest
+        MM.createManifest(args.path, manifestName=args.name)
+
+    elif (args.subparser_name == 'diff'):
+        # work out the difference between two manifests
+        MM.diffManifests(args.localpath, args.sourcepath, localManifestName=args.localname, sourceManifestName=args.sourcename)
+
+    elif (args.subparser_name == 'update'):
+        # update a local manifest
+        MM.updateManifest(args.localpath, args.sourcepath, localManifestName=args.localname, sourceManifestName=args.sourcename)
+
+    else:
+        print "ERROR: Unknown mode '%s'" % args.subparser_name
 
 
+    URL = "https://data.ace.uq.edu.au/public/CheckM_databases/.dmanifest"
 
 ###############################################################################
 ###############################################################################
@@ -66,10 +80,33 @@ def doWork(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('path', help="path where files are")
-    #parser.add_argument('positional_arg2', type=int, help="Integer argument")
-    #parser.add_argument('positional_arg3', nargs='+', help="Multiple values")
-    #parser.add_argument('-X', '--optional_X', action="store_true", default=False, help="flag")
+    subparsers = parser.add_subparsers(help="--", dest='subparser_name')
+
+    create_parser = subparsers.add_parser('create',
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                          help='Create a manifest',
+                                          description='Create a manifest')
+    create_parser.add_argument('path', help="path to files to be added to manifest")
+    create_parser.add_argument('-n', '--name', default=None, help="name for the manifest file")
+
+
+    diff_parser = subparsers.add_parser('diff',
+                                         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                         help='Work out the difference between two manifests',
+                                         description='Work out the difference between two manifests')
+    diff_parser.add_argument('localpath', help="path to the local collection of files")
+    diff_parser.add_argument('-l', '--localname', default=None, help="name of the local manifest file")
+    diff_parser.add_argument('sourcepath', help="path to the collection of source files")
+    diff_parser.add_argument('-s', '--sourcename', default=None, help="name of the source manifest file")
+
+    update_parser = subparsers.add_parser('update',
+                                          formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+                                          help='Update a local manifest',
+                                          description='Update a local manifest')
+    update_parser.add_argument('localpath', help="path to the local collection of files")
+    update_parser.add_argument('-l', '--localname', default=None, help="name of the local manifest file")
+    update_parser.add_argument('sourcepath', help="path to the collection of source files")
+    update_parser.add_argument('-s', '--sourcename', default=None, help="name of the source manifest file")
 
     # parse the arguments
     args = parser.parse_args()

@@ -49,6 +49,7 @@ __MANIFEST__ = ".dmanifest"
 import sys
 import os
 import hashlib
+import urllib2
 
 # local includes
 from screamingbackpack.fileEntity import FileEntity as FE
@@ -69,7 +70,7 @@ class ManifestManager(object):
             manifestName = __MANIFEST__
         # make the root file entity
         root_path = os.path.abspath(path)
-        root_fe = FE("d", 'root', ".", None, "-")
+        root_fe = FE('root', ".", None, "-", 0)
         self.files.append(root_fe)
         # now make all the ones below
         parents = [root_fe]
@@ -85,18 +86,62 @@ class ManifestManager(object):
 #-----------------------------------------------------------------------------
 # Get the remote manifest file and check for differences
 
-    def diffRemoteManifest(self,
-                           manifestPath,
-                           remoteUrl,
-                           localManifestName=__MANIFEST__,
-                           remoteManifestName=__MANIFEST__):
-        """get the manifest file from the remote server and
-        check for any differences from the local manifest
+    def diffManifests(self,
+                      localManifestFile,
+                      sourceManifestFile,
+                      localManifestName=None,
+                      sourceManifestName=None):
+        """check for any differences between two manifests
 
+        if remote is true then sourceManifestFile is a URL
         returns a list of files that need to be updated
         """
-        pass
+        if localManifestName is None:
+            localManifestName = __MANIFEST__
+        if sourceManifestName is None:
+            sourceManifestName = __MANIFEST__
 
+        # load the source manifest
+        source_man = {}
+        # first we assume it is remote
+        try:
+            s_man = urllib2.urlopen(sourceManifestFile + "/" + sourceManifestName)
+        except ValueError:
+            # then it is probably a file
+            s_man = open(os.path.join(sourceManifestFile, sourceManifestName))
+
+        for line in s_man:
+            print line
+            fields = line.rstrip().split("\t")
+            # set the dict up as {path => [hash, size, seenLocal]
+            source_man[fields[0]] = [fields[1], fields[2], False]
+
+        # keep lists of modifications
+        deleted = []
+        added = []
+        modified = []
+
+        with open(os.path.join(localManifestFile, localManifestName)) as l_man:
+            for line in l_man:
+                fields = line.rstrip().split("\t")
+                try:
+                    if source_man[fields[0]][0] != fields[1]:
+                        # hashes don't match
+                        modified.append(fields[0])
+                    # seen this file
+                    source_man[fields[0]][2] = True
+                except KeyError:
+                    # this file has been deleted from the source manifest
+                    deleted.append(fields[0])
+
+        # check for new files
+        for file in source_man.keys():
+            if source_man[file][2] == False:
+                added.append(file)
+
+        print "added", added
+        print "deleted", deleted
+        print "modified", modified
 
 
 #-----------------------------------------------------------------------------
@@ -107,16 +152,17 @@ class ManifestManager(object):
         # first do files here
         for file in files:
             if file != skipFile:
-                self.files.append(FE("f",
-                                     file,
+                path = os.path.join(full_path, file)
+                self.files.append(FE(file,
                                      rel_path,
                                      parents[-1],
-                                     self.hashfile(os.path.join(full_path, file))
+                                     self.hashfile(path),
+                                     os.path.getsize(path)
                                      )
                                   )
         for dir in dirs:
             # the walk will go into these dirs first
-            tmp_fe = FE("d", dir, rel_path, parents[-1], "-")
+            tmp_fe = FE(dir, rel_path, parents[-1], "-", 0)
             self.files.append(tmp_fe)
             parents.append(tmp_fe)
             new_full_path = os.path.join(full_path, dir)

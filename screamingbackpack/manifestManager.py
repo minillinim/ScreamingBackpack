@@ -28,7 +28,7 @@ __author__ = "Michael Imelfort"
 __copyright__ = "Copyright 2014"
 __credits__ = ["Michael Imelfort"]
 __license__ = "GPLv3"
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 __maintainer__ = "Michael Imelfort"
 __email__ = "mike@mikeimelfort.com"
 __status__ = "Beta"
@@ -52,6 +52,7 @@ import hashlib
 import urllib2
 import urllib
 import shutil
+import errno
 
 # local includes
 from screamingbackpack.fileEntity import FileEntity as FE
@@ -290,6 +291,7 @@ class ManifestManager(object):
                 urllib.urlretrieve(source+modify[0], full_path)
 
         if update_manifest:
+            print "(re) creating manifest file (please be patient)"
             self.createManifest(localManifestLocation, manifestName=localManifestName)
 
     def getManType(self, line):

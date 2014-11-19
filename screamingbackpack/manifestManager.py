@@ -28,10 +28,9 @@ __author__ = "Michael Imelfort"
 __copyright__ = "Copyright 2014"
 __credits__ = ["Michael Imelfort"]
 __license__ = "GPLv3"
-__version__ = "0.2.1"
 __maintainer__ = "Michael Imelfort"
 __email__ = "mike@mikeimelfort.com"
-__status__ = "Beta"
+__version__ = "0.2.3"
 
 ###############################################################################
 ###############################################################################
@@ -46,7 +45,6 @@ __MANIFEST__ = ".dmanifest"
 ###############################################################################
 
 # system includes
-import sys
 import os
 import hashlib
 import urllib2
@@ -64,7 +62,9 @@ from screamingbackpack.fileEntity import FileEntity as FE
 
 class ManifestManager(object):
     """Use this interface for storing and managing file and paths"""
-    def __init__(self, manType=None):
+    def __init__(self, manType=None, timeout=30):
+        self.timeout = timeout
+         
         self.files = []
         if manType is not None:
             self.type = manType
@@ -87,9 +87,9 @@ class ManifestManager(object):
         with open(os.path.join(path, manifestName), 'w') as man_fh:
             # print the header
             man_fh.write("##%s##\tData manifest created by ScreamingBackpack version %s\n" % (self.type, __version__))
-            for file in self.files:
-                if file.parent is not None:
-                    man_fh.write("%s\n" % file)
+            for f in self.files:
+                if f.parent is not None:
+                    man_fh.write("%s\n" % f)
 
     def diffManifests(self,
                       localManifestLocation,
@@ -121,12 +121,16 @@ class ManifestManager(object):
         source = ""
         # first we assume it is remote
         try:
-            s_man = urllib2.urlopen(sourceManifestLocation + "/" + sourceManifestName)
+            s_man = urllib2.urlopen(sourceManifestLocation + "/" + sourceManifestName, None, self.timeout)
             source = sourceManifestLocation + "/"
         except ValueError:
             # then it is probably a file
             s_man = open(os.path.join(sourceManifestLocation, sourceManifestName))
             source = os.path.join(sourceManifestLocation) + os.path.sep
+        except urllib2.URLError:
+            # problems connecting to server, perhaps user is behind a proxy or firewall
+            print "Error: failed to connect to server."
+            return (None, None, None, None, None)
 
         first_line = True
         for line in s_man:
@@ -140,7 +144,7 @@ class ManifestManager(object):
                         return (None, None, None, None, None)
                 else:
                     # no type specified
-                    print "Error: type of source manifest is not specified. Is this a valid maniifest file?"
+                    print "Error: type of source manifest is not specified. Is this a valid manifest file?"
                     return (None, None, None, None, None)
 
                 self.type = l_type
@@ -170,44 +174,44 @@ class ManifestManager(object):
                         deleted.append(fields[0])
 
         # check for new files
-        for file in source_man.keys():
-            if source_man[file][2] == False:
-                if source_man[file][0] == '-':
-                    addedDirs.append(file)
+        for f in source_man.keys():
+            if source_man[f][2] == False:
+                if source_man[f][0] == '-':
+                    addedDirs.append(f)
                 else:
-                    addedFiles.append(file)
+                    addedFiles.append(f)
 
         if printDiffs:
             new_size = 0
             modified_size = 0
-            for file in addedFiles:
-                new_size += int(source_man[file][1])
-            for file in modified:
-                modified_size += int(source_man[file][1])
+            for f in addedFiles:
+                new_size += int(source_man[f][1])
+            for f in modified:
+                modified_size += int(source_man[f][1])
 
             if len(addedFiles) > 0:
                 print "#------------------------------------------------------"
                 print "# Source contains %d new file(s) (%s)" % (len(addedFiles), self.formatData(new_size))
-                for file in addedFiles:
-                    print "\t".join([self.formatData(int(source_man[file][1])), file])
+                for f in addedFiles:
+                    print "\t".join([self.formatData(int(source_man[f][1])), f])
 
             if len(addedDirs) > 0:
                 print "#------------------------------------------------------"
                 print "# Source contains %d new folders(s)" % (len(addedDirs))
-                for file in addedDirs:
-                    print file
+                for f in addedDirs:
+                    print f
 
             if len(modified) > 0:
                 print "#------------------------------------------------------"
                 print "# Source contains %d modified file(s) (%s)" % (len(modified), self.formatData(modified_size))
-                for file in modified:
-                    print file
+                for f in modified:
+                    print f
 
             if len(deleted) > 0:
                 print "#------------------------------------------------------"
                 print "# %d files have been deleted in the source:" % len(deleted)
-                for file in deleted:
-                    print file
+                for f in deleted:
+                    print f
         else:
             return (source,
                     [(a, source_man[a]) for a in addedFiles],
@@ -230,17 +234,17 @@ class ManifestManager(object):
                                                                                 sourceManifestName)
         # bail if the diff failed
         if source is None:
-            return
+            return False
 
         # no changes by default
         do_down = False
         do_del = False
         if prompt:
             total_size = 0
-            for file in added_files:
-                total_size += int(file[1][1])
-            for file in modified:
-                total_size += int(file[1][1])
+            for f in added_files:
+                total_size += int(f[1][1])
+            for f in modified:
+                total_size += int(f[1][1])
             if total_size != 0:
                 print "****************************************************************"
                 print "%d new file(s) to be downloaded from source" % len(added_files)
@@ -293,6 +297,8 @@ class ManifestManager(object):
         if update_manifest:
             print "(re) creating manifest file (please be patient)"
             self.createManifest(localManifestLocation, manifestName=localManifestName)
+            
+        return True
 
     def getManType(self, line):
         """Work out the manifest type from the first line of the file"""
@@ -363,23 +369,23 @@ class ManifestManager(object):
     def walk(self, parents, full_path, rel_path, dirs, files, skipFile=__MANIFEST__):
         """recursive walk through directory tree"""
         # first do files here
-        for file in files:
-            if file != skipFile:
-                path = os.path.join(full_path, file)
-                self.files.append(FE(file,
+        for f in files:
+            if f != skipFile:
+                path = os.path.join(full_path, f)
+                self.files.append(FE(f,
                                      rel_path,
                                      parents[-1],
                                      self.hashfile(path),
                                      os.path.getsize(path)
                                      )
                                   )
-        for dir in dirs:
+        for d in dirs:
             # the walk will go into these dirs first
-            tmp_fe = FE(dir, rel_path, parents[-1], "-", 0)
+            tmp_fe = FE(d, rel_path, parents[-1], "-", 0)
             self.files.append(tmp_fe)
             parents.append(tmp_fe)
-            new_full_path = os.path.join(full_path, dir)
-            new_rel_path = os.path.join(rel_path, dir)
+            new_full_path = os.path.join(full_path, d)
+            new_rel_path = os.path.join(rel_path, d)
             new_dirs, new_files = self.listdir(new_full_path)[:2]
             self.walk(parents, new_full_path, new_rel_path, new_dirs, new_files)
             parents.pop()

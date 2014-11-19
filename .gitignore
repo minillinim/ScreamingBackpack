@@ -1,3 +1,7 @@
 build
 dist/
 MANIFEST
+
+# Eclipe development environment for Python
+.pydevproject
+.project
